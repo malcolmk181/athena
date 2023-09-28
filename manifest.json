@@ -1,11 +1,10 @@
 {
-	"id": "sample-plugin",
-	"name": "Sample Plugin",
+	"id": "athena",
+	"name": "Athena: KG Enhanced LLM Interactivity for Obsidian",
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
-	"description": "This is a sample plugin for Obsidian. This plugin demonstrates some of the capabilities of the Obsidian API.",
-	"author": "Obsidian",
-	"authorUrl": "https://obsidian.md",
-	"fundingUrl": "https://obsidian.md/pricing",
-	"isDesktopOnly": false
+	"description": "This plugin enables knowledge-graph enhanced LLM interactivity for your Obsidian Vault.",
+	"author": "Malcolm Keyes",
+	"authorUrl": "https://github.com/malcolmk181",
+	"isDesktopOnly": true
 }
