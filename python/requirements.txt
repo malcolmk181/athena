@@ -1,0 +1,9 @@
+langchain
+markdown
+neo4j
+nltk
+openai
+pip
+python-dotenv
+tiktoken
+unstructured
