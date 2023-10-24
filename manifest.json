@@ -1,6 +1,6 @@
 {
 	"id": "athena",
-	"name": "Athena: KG Enhanced LLM Interactivity for Obsidian",
+	"name": "Athena",
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
 	"description": "This plugin enables knowledge-graph enhanced LLM interactivity for your Obsidian Vault.",
