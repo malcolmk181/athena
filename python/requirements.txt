@@ -1,3 +1,4 @@
+chromadb
 langchain
 neo4j
 openai
