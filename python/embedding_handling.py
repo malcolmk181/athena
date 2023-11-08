@@ -10,6 +10,7 @@ import chromadb
 from dotenv import load_dotenv
 from langchain.document_loaders import UnstructuredMarkdownLoader
 from langchain.embeddings import OpenAIEmbeddings
+from langchain.schema import Document
 from langchain.text_splitter import CharacterTextSplitter
 
 import file_handling
@@ -42,6 +43,17 @@ def get_vector_store_collection() -> chromadb.Collection:
     return collection
 
 
+def get_chunks_from_file_name(file_name: str) -> list[Document]:
+    loader = UnstructuredMarkdownLoader(f"../../../../{file_name}")
+    
+    return loader.load_and_split(
+        CharacterTextSplitter.from_tiktoken_encoder(
+            chunk_size=CHUNK_SIZE,
+            chunk_overlap=CHUNK_OVERLAP,
+        )
+    )
+
+
 def save_note_embeddings_to_vector_store() -> None:
     """Create the embeddings for the notes in the vault and save them to the vector
     store. Creates the vector store if it does not exist.
@@ -56,18 +68,13 @@ def save_note_embeddings_to_vector_store() -> None:
 
     if not isinstance(file_store, dict):
         print("Loading file store failed. Embedding creation skipped.")
+        return
 
     collection = get_vector_store_collection()
     embedding_model = get_embeddings_model()
 
     for file_name in file_store:
-        loader = UnstructuredMarkdownLoader(f"../../../../{file_name}")
-        chunks = loader.load_and_split(
-            CharacterTextSplitter.from_tiktoken_encoder(
-                chunk_size=CHUNK_SIZE,
-                chunk_overlap=CHUNK_OVERLAP,
-            )
-        )
+        chunks = get_chunks_from_file_name(file_name)
 
         file_store[file_name]["chunk_size"] = CHUNK_SIZE
         file_store[file_name]["chunk_overlap"] = CHUNK_OVERLAP
