@@ -1,3 +1,9 @@
+"""
+embedding_handling.py
+
+Contains functions for creating and retrieving embeddings for note chunks.
+"""
+
 import uuid
 
 import chromadb
@@ -5,7 +11,6 @@ from dotenv import load_dotenv
 from langchain.document_loaders import UnstructuredMarkdownLoader
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.text_splitter import CharacterTextSplitter
-from langchain.vectorstores import Chroma
 
 import file_handling
 
@@ -74,6 +79,11 @@ def save_note_embeddings_to_vector_store() -> None:
 
             chunk_embedding = embedding_model.embed_documents([chunk.page_content])
 
-            collection.add([chunk_uuid], chunk_embedding, [{"document_uuid": file_store[file_name]["uuid"]}], [file_name])
+            collection.add(
+                [chunk_uuid],
+                chunk_embedding,
+                [{"document_uuid": file_store[file_name]["uuid"]}],
+                [file_name],
+            )
 
     file_handling.update_file_store(file_store)
