@@ -1,3 +1,5 @@
 .env
-chroma_db
+.chromadb
 venv
+__pycache__
+file_store.json
