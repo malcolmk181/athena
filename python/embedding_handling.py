@@ -45,7 +45,7 @@ def get_vector_store_collection() -> chromadb.Collection:
 
 def get_chunks_from_file_name(file_name: str) -> list[Document]:
     loader = UnstructuredMarkdownLoader(f"../../../../{file_name}")
-    
+
     return loader.load_and_split(
         CharacterTextSplitter.from_tiktoken_encoder(
             chunk_size=CHUNK_SIZE,
