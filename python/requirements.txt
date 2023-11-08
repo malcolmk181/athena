@@ -1,8 +1,8 @@
 chromadb
 langchain
 neo4j
-openai
+openai<1.0.0
 pip
 python-dotenv
 tiktoken
-unstructured[markdown]
+unstructured[md]
