@@ -10,6 +10,7 @@ from langchain.chains.openai_functions import create_structured_output_chain
 from langchain.chat_models import ChatOpenAI
 from langchain.graphs import Neo4jGraph
 from langchain.graphs.graph_document import (
+    GraphDocument,
     Node as BaseNode,
     Relationship as BaseRelationship,
 )
@@ -209,27 +210,73 @@ def create_graph_document_from_note(
 
     chunks = embedding_handling.get_chunks_from_file_name(file_name)
 
-    # get knowledge graph from chunks
-
-    # convert knowledge graph into base nodes & base relationships
-
-    # make graph node
-    # type ObsidianVault
+    # make vault node
+    vault_node = BaseNode(id="ObsidianVault", type="ObsidianVaultNode")
 
     # make note node
-    # include uuid, file name
-    # type ObsidianNote
+    note_node = BaseNode(
+        id=file_store[file_name]["uuid"],
+        type="ObsidianNote",
+        properties={"file_name": file_name},
+    )
 
-    # make chunk nodes
-    # include uuid, embeddings
-    # type ObsidianNoteChunk
+    # vault to note relationship
+    vault_note_relationship = BaseRelationship(
+        source=vault_node, target=note_node, type="contains_note"
+    )
 
-    # add relationship between graph node and note node
+    all_base_nodes = [vault_node, note_node]
+    all_base_relationships = [vault_note_relationship]
 
-    # add relationships between note node and chunk nodes
+    # get knowledge graph from chunks
+    for i, chunk in enumerate(chunks):
+        chunk_kg = get_knowledge_graph_from_chunk(
+            chunk, llm, allowed_nodes, allowed_rels, verbose
+        )
 
-    # add relationships between chunk nodes and GPT-generated nodes
+        # convert knowledge graph into base nodes & base relationships
+        base_nodes = [map_to_base_node(node) for node in chunk_kg.nodes]
+        base_relationships = [map_to_base_relationship(rel) for rel in chunk_kg.rels]
+
+        # make chunk node
+        chunk_node = BaseNode(
+            id=file_store[file_name]["chunks"][i],
+            type="ObsidianNoteChunk",
+            properties={
+                "file_name": file_name,
+                "chunk_number": i,
+                "embeddings": collection.get(file_store[file_name]["chunks"][i])[
+                    "embeddings"
+                ],
+            },
+        )
+
+        # add relationship between note node and chunk node
+        note_to_chunk_relationship = BaseRelationship(
+            source=note_node, target=chunk_node, type="contains_chunk"
+        )
+
+        # add relationships between chunk nodes and GPT-generated nodes
+        chunk_to_node_relationships = []
+        for node in base_nodes:
+            chunk_to_node_relationships.append(
+                BaseRelationship(source=chunk_node, target=node, type="references_node")
+            )
+
+        # collect all nodes & relationships
+        all_base_nodes += base_nodes + [chunk_node]
+        all_base_relationships += (
+            base_relationships
+            + chunk_to_node_relationships
+            + [note_to_chunk_relationship]
+        )
 
     # assemble nodes & relationships into GraphDocument
+    graph_document = GraphDocument(
+        nodes=all_base_nodes,
+        relationships=all_base_relationships,
+        # source=file_name
+    )
 
+    return graph_document
     # later, graph.add_graph_documents([graph_document])

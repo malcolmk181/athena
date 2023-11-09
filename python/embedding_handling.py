@@ -12,6 +12,7 @@ from langchain.document_loaders import UnstructuredMarkdownLoader
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.schema import Document
 from langchain.text_splitter import CharacterTextSplitter
+from tqdm import tqdm
 
 import file_handling
 
@@ -73,13 +74,13 @@ def save_note_embeddings_to_vector_store() -> None:
     collection = get_vector_store_collection()
     embedding_model = get_embeddings_model()
 
-    for file_name in file_store:
+    for file_name in tqdm(file_store, desc="Notes", total=len(file_store)):
         chunks = get_chunks_from_file_name(file_name)
 
         file_store[file_name]["chunk_size"] = CHUNK_SIZE
         file_store[file_name]["chunk_overlap"] = CHUNK_OVERLAP
 
-        for chunk in chunks:
+        for chunk in tqdm(chunks, desc="Chunks in note", total=len(chunks)):
             chunk_uuid = str(uuid.uuid4())
 
             file_store[file_name]["chunks"].append(chunk_uuid)
@@ -87,10 +88,10 @@ def save_note_embeddings_to_vector_store() -> None:
             chunk_embedding = embedding_model.embed_documents([chunk.page_content])
 
             collection.add(
-                [chunk_uuid],
-                chunk_embedding,
-                [{"document_uuid": file_store[file_name]["uuid"]}],
-                [file_name],
+                ids=[chunk_uuid],
+                embeddings=chunk_embedding,
+                metadatas=[{"document_uuid": file_store[file_name]["uuid"]}],
+                documents=[file_name],
             )
 
     file_handling.update_file_store(file_store)
