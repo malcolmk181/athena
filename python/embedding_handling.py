@@ -44,6 +44,20 @@ def get_vector_store_collection() -> chromadb.Collection:
     return collection
 
 
+def delete_vector_store_collection(are_you_sure: bool) -> None:
+    """Deletes the vector store collection if it exists."""
+
+    if are_you_sure:
+        try:
+            client = chromadb.PersistentClient(path="./.chromadb/")
+            client.delete_collection("athena")
+
+            print("Athena collection deleted.")
+
+        except ValueError:
+            print("Athena collection did not exist, nothing to delete.")
+
+
 def get_chunks_from_file_name(file_name: str) -> tuple[Document, list[Document]]:
     """Returns a 2-tuple containing the original Document, and a list of its chunks as
     Documents.
@@ -105,7 +119,7 @@ def save_note_embeddings_to_vector_store() -> None:
                     ids=[chunk_uuid],
                     embeddings=[chunk_embedding],
                     metadatas=[{"document_uuid": file_store[file_name]["uuid"]}],
-                    documents=[file_name],
+                    documents=[chunk.page_content],
                 )
 
     file_handling.update_file_store(file_store)
