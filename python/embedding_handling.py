@@ -103,7 +103,7 @@ def save_note_embeddings_to_vector_store() -> None:
 
     for file_name in tqdm(file_store, desc="Notes", total=len(file_store)):
         if len(file_store[file_name]["chunks"]) == 0:
-            chunks = get_chunks_from_file_name(file_name)
+            _, chunks = get_chunks_from_file_name(file_name)
 
             file_store[file_name]["chunk_size"] = CHUNK_SIZE
             file_store[file_name]["chunk_overlap"] = CHUNK_OVERLAP
