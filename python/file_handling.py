@@ -10,10 +10,19 @@ import os
 import uuid
 
 
-def collect_files_from_vault() -> list[str]:
-    """Returns the file names of the markdown files in the vault directory."""
+def collect_file_paths_from_vault() -> list[str]:
+    """Returns the file paths of the markdown files in the vault directory."""
 
     return glob.glob("../../../../*.md")
+
+
+def collect_file_names_from_vault() -> list[str]:
+    """Returns the file names of the markdown files in the vault directory."""
+
+    file_paths = glob.glob("../../../../*.md")
+    file_names = [os.path.basename(path) for path in file_paths]
+
+    return file_names
 
 
 def create_new_note_store(overwrite_existing_store: bool = False) -> None:
@@ -27,7 +36,7 @@ def create_new_note_store(overwrite_existing_store: bool = False) -> None:
 
     file_store = {}
 
-    notes = collect_files_from_vault()
+    notes = collect_file_paths_from_vault()
 
     for note in notes:
         file_store[os.path.basename(note)] = {

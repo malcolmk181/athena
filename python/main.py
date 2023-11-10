@@ -18,7 +18,7 @@ def main() -> None:
     # Rebuild the vector store and file store
     embedding_handling.save_note_embeddings_to_vector_store()
 
-    note_file_names = file_handling.collect_files_from_vault()
+    note_file_names = file_handling.collect_file_names_from_vault()
 
     # Rebuild the graph
     for note in tqdm(
