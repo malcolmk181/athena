@@ -176,7 +176,12 @@ def delete_graph(are_you_sure: bool) -> None:
     """This will wipe all nodes & relationships from the Neo4j Graph."""
 
     if are_you_sure:
-        get_graph_connector().query("MATCH (n) DETACH DELETE n")
+        result = get_graph_connector().query("MATCH (n) DETACH DELETE n")
+
+        if len(result) == 0:
+            print("Neo4j database emptied.")
+        else:
+            print("Delete query returned results. Something may have gone wrong.")
 
 
 def get_knowledge_graph_from_chunk(
