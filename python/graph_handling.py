@@ -199,7 +199,7 @@ def create_graph_document_from_note(
     allowed_nodes: list[str] | None = None,
     allowed_rels: list[str] | None = None,
     verbose: bool = False,
-):
+) -> GraphDocument:
     file_store = file_handling.load_file_store()
 
     if file_store is None:
@@ -208,7 +208,7 @@ def create_graph_document_from_note(
 
     collection = embedding_handling.get_vector_store_collection()
 
-    chunks = embedding_handling.get_chunks_from_file_name(file_name)
+    doc, chunks = embedding_handling.get_chunks_from_file_name(file_name)
 
     # make vault node
     vault_node = BaseNode(id="ObsidianVault", type="ObsidianVaultNode")
@@ -229,7 +229,11 @@ def create_graph_document_from_note(
     all_base_relationships = [vault_note_relationship]
 
     # get knowledge graph from chunks
-    for i, chunk in enumerate(chunks):
+    for i, chunk in tqdm(
+        enumerate(chunks),
+        desc="Creating graph from each document chunk",
+        total=len(chunks),
+    ):
         chunk_kg = get_knowledge_graph_from_chunk(
             chunk, llm, allowed_nodes, allowed_rels, verbose
         )
@@ -245,9 +249,9 @@ def create_graph_document_from_note(
             properties={
                 "file_name": file_name,
                 "chunk_number": i,
-                "embeddings": collection.get(file_store[file_name]["chunks"][i])[
-                    "embeddings"
-                ],
+                "embeddings": collection.get(
+                    ids=file_store[file_name]["chunks"][i], include=["embeddings"]
+                )["embeddings"][0],
             },
         )
 
@@ -273,9 +277,7 @@ def create_graph_document_from_note(
 
     # assemble nodes & relationships into GraphDocument
     graph_document = GraphDocument(
-        nodes=all_base_nodes,
-        relationships=all_base_relationships,
-        # source=file_name
+        nodes=all_base_nodes, relationships=all_base_relationships, source=doc
     )
 
     return graph_document

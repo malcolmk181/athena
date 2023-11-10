@@ -44,15 +44,23 @@ def get_vector_store_collection() -> chromadb.Collection:
     return collection
 
 
-def get_chunks_from_file_name(file_name: str) -> list[Document]:
+def get_chunks_from_file_name(file_name: str) -> tuple[Document, list[Document]]:
+    """Returns a 2-tuple containing the Document, and a list of its chunks as
+    documents.
+    """
+
     loader = UnstructuredMarkdownLoader(f"../../../../{file_name}")
 
-    return loader.load_and_split(
+    chunks = loader.load_and_split(
         CharacterTextSplitter.from_tiktoken_encoder(
             chunk_size=CHUNK_SIZE,
             chunk_overlap=CHUNK_OVERLAP,
         )
     )
+
+    doc = loader.load()[0]
+
+    return doc, chunks
 
 
 def save_note_embeddings_to_vector_store() -> None:
@@ -75,23 +83,24 @@ def save_note_embeddings_to_vector_store() -> None:
     embedding_model = get_embeddings_model()
 
     for file_name in tqdm(file_store, desc="Notes", total=len(file_store)):
-        chunks = get_chunks_from_file_name(file_name)
+        if len(file_store[file_name]["chunks"]) == 0:
+            chunks = get_chunks_from_file_name(file_name)
 
-        file_store[file_name]["chunk_size"] = CHUNK_SIZE
-        file_store[file_name]["chunk_overlap"] = CHUNK_OVERLAP
+            file_store[file_name]["chunk_size"] = CHUNK_SIZE
+            file_store[file_name]["chunk_overlap"] = CHUNK_OVERLAP
 
-        for chunk in tqdm(chunks, desc="Chunks in note", total=len(chunks)):
-            chunk_uuid = str(uuid.uuid4())
+            for chunk in tqdm(chunks, desc="Chunks in note", total=len(chunks)):
+                chunk_uuid = str(uuid.uuid4())
 
-            file_store[file_name]["chunks"].append(chunk_uuid)
+                file_store[file_name]["chunks"].append(chunk_uuid)
 
-            chunk_embedding = embedding_model.embed_documents([chunk.page_content])
+                chunk_embedding = embedding_model.embed_documents([chunk.page_content])
 
-            collection.add(
-                ids=[chunk_uuid],
-                embeddings=chunk_embedding,
-                metadatas=[{"document_uuid": file_store[file_name]["uuid"]}],
-                documents=[file_name],
-            )
+                collection.add(
+                    ids=[chunk_uuid],
+                    embeddings=chunk_embedding,
+                    metadatas=[{"document_uuid": file_store[file_name]["uuid"]}],
+                    documents=[file_name],
+                )
 
     file_handling.update_file_store(file_store)
