@@ -45,8 +45,8 @@ def get_vector_store_collection() -> chromadb.Collection:
 
 
 def get_chunks_from_file_name(file_name: str) -> tuple[Document, list[Document]]:
-    """Returns a 2-tuple containing the Document, and a list of its chunks as
-    documents.
+    """Returns a 2-tuple containing the original Document, and a list of its chunks as
+    Documents.
     """
 
     loader = UnstructuredMarkdownLoader(f"../../../../{file_name}")
@@ -61,6 +61,12 @@ def get_chunks_from_file_name(file_name: str) -> tuple[Document, list[Document]]
     doc = loader.load()[0]
 
     return doc, chunks
+
+
+def get_embedding_from_text(text: str) -> list[float]:
+    """Returns the embeddings for a single text."""
+
+    return get_embeddings_model().embed_documents([text])[0]
 
 
 def save_note_embeddings_to_vector_store() -> None:
@@ -80,7 +86,6 @@ def save_note_embeddings_to_vector_store() -> None:
         return
 
     collection = get_vector_store_collection()
-    embedding_model = get_embeddings_model()
 
     for file_name in tqdm(file_store, desc="Notes", total=len(file_store)):
         if len(file_store[file_name]["chunks"]) == 0:
@@ -94,11 +99,11 @@ def save_note_embeddings_to_vector_store() -> None:
 
                 file_store[file_name]["chunks"].append(chunk_uuid)
 
-                chunk_embedding = embedding_model.embed_documents([chunk.page_content])
+                chunk_embedding = get_embedding_from_text(chunk.page_content)
 
                 collection.add(
                     ids=[chunk_uuid],
-                    embeddings=chunk_embedding,
+                    embeddings=[chunk_embedding],
                     metadatas=[{"document_uuid": file_store[file_name]["uuid"]}],
                     documents=[file_name],
                 )
