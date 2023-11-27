@@ -60,10 +60,18 @@ class Relationship(BaseRelationship):
 class KnowledgeGraph(BaseModel):
     """Generate a knowledge graph with entities and relationships."""
 
-    nodes: List[Node] = Field(..., description="List of nodes in the knowledge graph")
+    nodes: List[Node] = Field(...,
+                              description="List of nodes in the knowledge graph")
     rels: List[Relationship] = Field(
         ..., description="List of relationships in the knowledge graph"
     )
+
+
+class NodeNameList(BaseModel):
+    """A list of the names of knowledge graph nodes."""
+
+    names: list[str] = Field(...,
+                             description="List of desired node names from a knowledge graph")
 
 
 def format_property_key(string: str) -> str:
@@ -245,7 +253,8 @@ def create_graph_document_from_note(
 
         # convert knowledge graph into base nodes & base relationships
         base_nodes = [map_to_base_node(node) for node in chunk_kg.nodes]
-        base_relationships = [map_to_base_relationship(rel) for rel in chunk_kg.rels]
+        base_relationships = [map_to_base_relationship(
+            rel) for rel in chunk_kg.rels]
 
         # make chunk node
         chunk_node = BaseNode(
@@ -255,7 +264,8 @@ def create_graph_document_from_note(
                 "file_name": file_name,
                 "chunk_number": i,
                 "embeddings": collection.get(
-                    ids=file_store[file_name]["chunks"][i], include=["embeddings"]
+                    ids=file_store[file_name]["chunks"][i], include=[
+                        "embeddings"]
                 )["embeddings"][0],
             },
         )
@@ -269,7 +279,8 @@ def create_graph_document_from_note(
         chunk_to_node_relationships = []
         for node in base_nodes:
             chunk_to_node_relationships.append(
-                BaseRelationship(source=chunk_node, target=node, type="references_node")
+                BaseRelationship(source=chunk_node, target=node,
+                                 type="references_node")
             )
 
         # collect all nodes & relationships
@@ -287,3 +298,50 @@ def create_graph_document_from_note(
 
     return graph_document
     # later, graph.add_graph_documents([graph_document])
+
+
+def get_all_node_names() -> list[str]:
+    """Returns a list of all the names of the nodes in the graph"""
+
+    names: list[dict] = get_graph_connector().query("""
+                MATCH (n)
+                WHERE n.name IS NOT NULL
+                RETURN n.name""")
+
+    return [list(d.values())[0] for d in names]
+
+
+def get_relevant_nodes_from_question(
+    llm: ChatOpenAI,
+    node_name_list: list[str],
+    question: str,
+    verbose: bool = False,
+) -> NodeNameList:
+    """
+    Uses LLM to shorten & sort a list of node names by how relevant they are to a
+    user question. This *does* appear to use the LLM's previous knowledge.
+    """
+
+    prompt = ChatPromptTemplate.from_messages(
+        [
+            (
+                "system",
+                """# Prompt for GPT-4:
+Question:
+"{question}"
+
+List of Node Names from the Knowledge Graph:
+{names}
+
+# Task for GPT-4:
+Analyze the provided list of names from the knowledge graph in the context of the question. Identify and list the names that are most relevant to the question, ordering them from the most important to less important. Do not include names that are not very important. Consider only the content of the question and do not use prior knowledge.
+""",
+            ),
+            ("human", "Tip: Make sure to answer in the correct format"),
+        ]
+    )
+
+    chain = create_structured_output_chain(
+        NodeNameList, llm, prompt, verbose=verbose)
+
+    return chain.run(question=question, names=", ".join(node_name_list))
