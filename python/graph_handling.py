@@ -345,3 +345,22 @@ Analyze the provided list of names from the knowledge graph in the context of th
         NodeNameList, llm, prompt, verbose=verbose)
 
     return chain.run(question=question, names=", ".join(node_name_list))
+
+
+def get_chunk_ids_by_node_names(node_names: list[str]) -> list[str]:
+    """Given a list of node names, returns the ids of the chunks that reference them.
+    
+    May contain duplicates.
+    """
+
+    if len(node_names) == 0:
+        return []
+
+    ids: list[dict] = get_graph_connector().query(f"""
+                            MATCH (n)
+                            WHERE n.name IN [{",".join([f"'{name}'" for name in node_names])}]
+                            OPTIONAL MATCH (n)-[r]-(related:ObsidianNoteChunk)""" +
+                        """ RETURN collect({id: related.id}) as relatedNodes
+                        """)
+
+    return [list(d.values())[0] for d in ids[0]['relatedNodes']]
