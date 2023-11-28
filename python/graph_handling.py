@@ -356,6 +356,7 @@ def get_chunk_ids_by_node_names(node_names: list[str]) -> list[str]:
     if len(node_names) == 0:
         return []
 
+    # This query will collect ids even if there are duplicates of the named node
     ids: list[dict] = get_graph_connector().query(f"""
                             MATCH (n)
                             WHERE n.name IN [{",".join([f"'{name}'" for name in node_names])}]
@@ -364,3 +365,56 @@ def get_chunk_ids_by_node_names(node_names: list[str]) -> list[str]:
                         """)
 
     return [list(d.values())[0] for d in ids[0]['relatedNodes']]
+
+
+def get_non_housekeeping_relationships_from_node_name(
+    node_name: str,
+    allowed_names: list[str] | None = None,
+) -> list[tuple[dict, str, dict]]:
+    """
+    Given a node name, will return the relationships between that node and the other
+    non-housekeeping nodes in the graph.
+    
+    If a list of names is provided in allowed_names, will only return the relationships
+    that occur between the primary node and any of the allowed nodes.
+    """
+
+    allowed_node_syntax = ""
+
+    # Block of Cypher for modifying the results to blank out non-allowed nodes
+    if allowed_names:
+        allowed_node_syntax += "WHEN NOT related.name IN ["
+        allowed_node_syntax += ",".join(
+            [f"'{name}'" for name in allowed_names])
+        allowed_node_syntax += "]\nTHEN {label: 'Unrelated'}"
+
+    query_results: list[dict] = get_graph_connector().query(f"""
+                MATCH (n)
+                WHERE n.name = '{node_name}'""" + """
+                OPTIONAL MATCH (n)-[r]-(related)
+                RETURN n,
+                    collect(r) as relationships,
+                    collect(
+                        CASE
+                            WHEN 'ObsidianNoteChunk' IN labels(related)
+                                THEN {label: 'ObsidianNoteChunk'}""" +
+                            allowed_node_syntax + """
+                            ELSE related
+                        END
+                    ) as relatedNodes
+                """)
+
+    results: list[tuple[dict, str, dict]] = []
+
+    # could be more than one node with the same name
+    for node in query_results:
+        for relationship in node['relationships']:
+            # second item is edge type
+            # len checks are to make sure the node didn't get filtered out
+            if (relationship[1] != 'REFERENCES_NODE'
+                and len(relationship[0]) != 0
+                and len(relationship[2]) != 0):
+                
+                results.append(relationship)
+
+    return results
