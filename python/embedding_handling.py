@@ -132,7 +132,7 @@ def user_query_to_chromadb_query_result(query: str) -> chromadb.QueryResult:
     of embeddings for it, then queries the vector store collection for the most similar
     embeddings for the stored document chunks.
     """
-    
+
     messages = [
         SystemMessage(
             content="You are a helpful assistant that converts user queries into declarative statements for the purposes of document retrieval using embedding cosine similarity."
@@ -152,7 +152,7 @@ def user_query_to_chromadb_query_result(query: str) -> chromadb.QueryResult:
 def chroma_query_result_to_chunk_ids(
     query_result: chromadb.QueryResult,
     similarity_cutoff: float = 0.2,
-    doc_limit: int = 10
+    doc_limit: int = 10,
 ) -> list[str]:
     """
     Given a chromadb QueryResult, return a list of chunk ids from the most relevant
@@ -161,10 +161,10 @@ def chroma_query_result_to_chunk_ids(
 
     results: list[str] = []
 
-    for i, distance in enumerate(query_result['distances'][0]):
+    for i, distance in enumerate(query_result["distances"][0]):
         if distance > similarity_cutoff or i > doc_limit - 1:
             break
 
-        results.append(query_result['ids'][0][i])
+        results.append(query_result["ids"][0][i])
 
     return results

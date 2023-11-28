@@ -61,8 +61,7 @@ class Relationship(BaseRelationship):
 class KnowledgeGraph(BaseModel):
     """Generate a knowledge graph with entities and relationships."""
 
-    nodes: List[Node] = Field(...,
-                              description="List of nodes in the knowledge graph")
+    nodes: List[Node] = Field(..., description="List of nodes in the knowledge graph")
     rels: List[Relationship] = Field(
         ..., description="List of relationships in the knowledge graph"
     )
@@ -71,8 +70,9 @@ class KnowledgeGraph(BaseModel):
 class NodeNameList(BaseModel):
     """A list of the names of knowledge graph nodes."""
 
-    names: list[str] = Field(...,
-                             description="List of desired node names from a knowledge graph")
+    names: list[str] = Field(
+        ..., description="List of desired node names from a knowledge graph"
+    )
 
 
 def format_property_key(string: str) -> str:
@@ -254,8 +254,7 @@ def create_graph_document_from_note(
 
         # convert knowledge graph into base nodes & base relationships
         base_nodes = [map_to_base_node(node) for node in chunk_kg.nodes]
-        base_relationships = [map_to_base_relationship(
-            rel) for rel in chunk_kg.rels]
+        base_relationships = [map_to_base_relationship(rel) for rel in chunk_kg.rels]
 
         # make chunk node
         chunk_node = BaseNode(
@@ -265,8 +264,7 @@ def create_graph_document_from_note(
                 "file_name": file_name,
                 "chunk_number": i,
                 "embeddings": collection.get(
-                    ids=file_store[file_name]["chunks"][i], include=[
-                        "embeddings"]
+                    ids=file_store[file_name]["chunks"][i], include=["embeddings"]
                 )["embeddings"][0],
             },
         )
@@ -280,8 +278,7 @@ def create_graph_document_from_note(
         chunk_to_node_relationships = []
         for node in base_nodes:
             chunk_to_node_relationships.append(
-                BaseRelationship(source=chunk_node, target=node,
-                                 type="references_node")
+                BaseRelationship(source=chunk_node, target=node, type="references_node")
             )
 
         # collect all nodes & relationships
@@ -304,10 +301,12 @@ def create_graph_document_from_note(
 def get_all_node_names() -> list[str]:
     """Returns a list of all the names of the nodes in the graph"""
 
-    names: list[dict] = get_graph_connector().query("""
+    names: list[dict] = get_graph_connector().query(
+        """
                 MATCH (n)
                 WHERE n.name IS NOT NULL
-                RETURN n.name""")
+                RETURN n.name"""
+    )
 
     return [list(d.values())[0] for d in names]
 
@@ -342,15 +341,14 @@ Analyze the provided list of names from the knowledge graph in the context of th
         ]
     )
 
-    chain = create_structured_output_chain(
-        NodeNameList, llm, prompt, verbose=verbose)
+    chain = create_structured_output_chain(NodeNameList, llm, prompt, verbose=verbose)
 
     return chain.run(question=question, names=", ".join(node_name_list))
 
 
 def get_chunk_ids_by_node_names(node_names: list[str]) -> list[str]:
     """Given a list of node names, returns the ids of the chunks that reference them.
-    
+
     May contain duplicates.
     """
 
@@ -358,14 +356,16 @@ def get_chunk_ids_by_node_names(node_names: list[str]) -> list[str]:
         return []
 
     # This query will collect ids even if there are duplicates of the named node
-    ids: list[dict] = get_graph_connector().query(f"""
+    ids: list[dict] = get_graph_connector().query(
+        f"""
                             MATCH (n)
                             WHERE n.name IN [{",".join([f"'{name}'" for name in node_names])}]
-                            OPTIONAL MATCH (n)-[r]-(related:ObsidianNoteChunk)""" +
-                        """ RETURN collect({id: related.id}) as relatedNodes
-                        """)
+                            OPTIONAL MATCH (n)-[r]-(related:ObsidianNoteChunk)"""
+        + """ RETURN collect({id: related.id}) as relatedNodes
+                        """
+    )
 
-    return [list(d.values())[0] for d in ids[0]['relatedNodes']]
+    return [list(d.values())[0] for d in ids[0]["relatedNodes"]]
 
 
 def get_non_housekeeping_relationships_from_node_name(
@@ -375,7 +375,7 @@ def get_non_housekeeping_relationships_from_node_name(
     """
     Given a node name, will return the relationships between that node and the other
     non-housekeeping nodes in the graph.
-    
+
     If a list of names is provided in allowed_names, will only return the relationships
     that occur between the primary node and any of the allowed nodes.
     """
@@ -385,37 +385,41 @@ def get_non_housekeeping_relationships_from_node_name(
     # Block of Cypher for modifying the results to blank out non-allowed nodes
     if allowed_names:
         allowed_node_syntax += "WHEN NOT related.name IN ["
-        allowed_node_syntax += ",".join(
-            [f"'{name}'" for name in allowed_names])
+        allowed_node_syntax += ",".join([f"'{name}'" for name in allowed_names])
         allowed_node_syntax += "]\nTHEN {label: 'Unrelated'}"
 
-    query_results: list[dict] = get_graph_connector().query(f"""
+    query_results: list[dict] = get_graph_connector().query(
+        f"""
                 MATCH (n)
-                WHERE n.name = '{node_name}'""" + """
+                WHERE n.name = '{node_name}'"""
+        + """
                 OPTIONAL MATCH (n)-[r]-(related)
                 RETURN n,
                     collect(r) as relationships,
                     collect(
                         CASE
                             WHEN 'ObsidianNoteChunk' IN labels(related)
-                                THEN {label: 'ObsidianNoteChunk'}""" +
-                            allowed_node_syntax + """
+                                THEN {label: 'ObsidianNoteChunk'}"""
+        + allowed_node_syntax
+        + """
                             ELSE related
                         END
                     ) as relatedNodes
-                """)
+                """
+    )
 
     results: list[tuple[dict, str, dict]] = []
 
     # could be more than one node with the same name
     for node in query_results:
-        for relationship in node['relationships']:
+        for relationship in node["relationships"]:
             # second item is edge type
             # len checks are to make sure the node didn't get filtered out
-            if (relationship[1] != 'REFERENCES_NODE'
+            if (
+                relationship[1] != "REFERENCES_NODE"
                 and len(relationship[0]) != 0
-                and len(relationship[2]) != 0):
-
+                and len(relationship[2]) != 0
+            ):
                 results.append(relationship)
 
     return results
@@ -428,19 +432,21 @@ def get_interrelationships_between_nodes(
 
     node_str = ",".join([f"'{node}'" for node in node_names])
 
-    query_results: list[dict] = get_graph_connector().query(f"""
+    query_results: list[dict] = get_graph_connector().query(
+        f"""
         UNWIND [{node_str}] AS nodeName1
         UNWIND [{node_str}] AS nodeName2
         MATCH (n1)-[r]->(n2)
         WHERE n1.name = nodeName1 AND n2.name = nodeName2
         RETURN n1, r, n2
-        """)
+        """
+    )
 
     results: list[tuple[dict, str, dict]] = []
 
     # one row per relationship
     for row in query_results:
-        results.append(row['r'])
+        results.append(row["r"])
 
     return results
 
