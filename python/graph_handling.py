@@ -3,6 +3,7 @@ graph_handling.py
 
 Contains functions & classes for creating graphs and pulling information from them.
 """
+
 from typing import List, Optional
 
 from dotenv import load_dotenv
@@ -419,11 +420,36 @@ def get_non_housekeeping_relationships_from_node_name(
 
     return results
 
+
+def get_interrelationships_between_nodes(
+    node_names: list[str],
+) -> list[tuple[dict, str, dict]]:
+    """Given a list of node names, will return the relationships between them."""
+
+    node_str = ",".join([f"'{node}'" for node in node_names])
+
+    query_results: list[dict] = get_graph_connector().query(f"""
+        UNWIND [{node_str}] AS nodeName1
+        UNWIND [{node_str}] AS nodeName2
+        MATCH (n1)-[r]->(n2)
+        WHERE n1.name = nodeName1 AND n2.name = nodeName2
+        RETURN n1, r, n2
+        """)
+
+    results: list[tuple[dict, str, dict]] = []
+
+    # one row per relationship
+    for row in query_results:
+        results.append(row['r'])
+
+    return results
+
+
 def summarize_relationship(
     llm: ChatOpenAI,
     relationship: tuple[dict, str, dict],
     verbose: bool = False,
-):
+) -> str:
     """Uses LLM to summarize the relationship between two nodes."""
 
     prompt = ChatPromptTemplate.from_messages(
