@@ -8,9 +8,10 @@ import uuid
 
 import chromadb
 from dotenv import load_dotenv
+from langchain.chat_models import ChatOpenAI
 from langchain.document_loaders import UnstructuredMarkdownLoader
 from langchain.embeddings import OpenAIEmbeddings
-from langchain.schema import Document
+from langchain.schema import Document, HumanMessage, SystemMessage
 from langchain.text_splitter import CharacterTextSplitter
 from tqdm import tqdm
 
@@ -123,3 +124,47 @@ def save_note_embeddings_to_vector_store() -> None:
                 )
 
     file_handling.update_file_store(file_store)
+
+
+def user_query_to_chromadb_query_result(query: str) -> chromadb.QueryResult:
+    """
+    Given a user's query, converts it into a declarative statement, then creates a set
+    of embeddings for it, then queries the vector store collection for the most similar
+    embeddings for the stored document chunks.
+    """
+    
+    messages = [
+        SystemMessage(
+            content="You are a helpful assistant that converts user queries into declarative statements for the purposes of document retrieval using embedding cosine similarity."
+        ),
+        HumanMessage(
+            content=f"Please convert the following user query into a declarative statement for document retrieval purposes. Focus on capturing the main topic and specific inquiry of the user's question. User's Question: {query}"
+        ),
+    ]
+
+    declarative_query = ChatOpenAI(temperature=0, model="gpt-3.5-turbo")(messages)
+
+    embedding = get_embedding_from_text(declarative_query.content)
+
+    return get_vector_store_collection().query([embedding])
+
+
+def chroma_query_result_to_chunk_ids(
+    query_result: chromadb.QueryResult,
+    similarity_cutoff: float = 0.2,
+    doc_limit: int = 10
+) -> list[str]:
+    """
+    Given a chromadb QueryResult, return a list of chunk ids from the most relevant
+    documents that are within the cosine similarity difference of the cutoff.
+    """
+
+    results: list[str] = []
+
+    for i, distance in enumerate(query_result['distances'][0]):
+        if distance > similarity_cutoff or i > doc_limit - 1:
+            break
+
+        results.append(query_result['ids'][0][i])
+
+    return results
