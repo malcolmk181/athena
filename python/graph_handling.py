@@ -414,7 +414,33 @@ def get_non_housekeeping_relationships_from_node_name(
             if (relationship[1] != 'REFERENCES_NODE'
                 and len(relationship[0]) != 0
                 and len(relationship[2]) != 0):
-                
+
                 results.append(relationship)
 
     return results
+
+def summarize_relationship(
+    llm: ChatOpenAI,
+    relationship: tuple[dict, str, dict],
+    verbose: bool = False,
+):
+    """Uses LLM to summarize the relationship between two nodes."""
+
+    prompt = ChatPromptTemplate.from_messages(
+        [
+            (
+                "system",
+                """# Prompt for GPT-4:
+Relationship between two nodes:
+"{relationship}"
+
+# Task for GPT-4:
+This is a relationship between two nodes in a Neo4j graph. Please use this information to give a summary of this relationship in a succinct paragraph that does not mention anything about a graph or nodes.
+""",
+            ),
+        ]
+    )
+
+    chain = create_structured_output_chain(str, llm, prompt, verbose=verbose)
+
+    return chain.run(relationship=relationship)
