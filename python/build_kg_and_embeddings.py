@@ -1,3 +1,9 @@
+"""
+Builds the knowledge graph and embeddings for the notes in the Obsidian Vault.
+
+This WILL delete any pre-existing graph and embeddings.
+"""
+
 from tqdm import tqdm
 
 import embedding_handling
