@@ -7,7 +7,6 @@ Contains functions for creating and retrieving embeddings for note chunks.
 import uuid
 
 import chromadb
-from dotenv import load_dotenv
 from langchain.chat_models import ChatOpenAI
 from langchain.document_loaders import UnstructuredMarkdownLoader
 from langchain.embeddings import OpenAIEmbeddings
@@ -16,13 +15,14 @@ from langchain.text_splitter import CharacterTextSplitter
 from tqdm import tqdm
 
 import file_handling
+from load_environment import load_environment
 
 
 CHUNK_SIZE = 1024
 CHUNK_OVERLAP = 24
 
 
-load_dotenv()
+load_environment()
 
 
 def get_embeddings_model() -> OpenAIEmbeddings:

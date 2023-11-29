@@ -3,11 +3,11 @@ import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Set
 // Remember to rename these classes and interfaces!
 
 interface MyPluginSettings {
-	mySetting: string;
+	openaiApiKey: string;
 }
 
 const DEFAULT_SETTINGS: MyPluginSettings = {
-	mySetting: 'default'
+	openaiApiKey: ''
 }
 
 export default class AthenaPlugin extends Plugin {
@@ -91,7 +91,14 @@ export default class AthenaPlugin extends Plugin {
 
 	async saveSettings() {
 		await this.saveData(this.settings);
+		await this.saveApiKeyToFile(this.settings.openaiApiKey);
 	}
+
+	async saveApiKeyToFile(apiKey: string) {
+        const fileContent = `OPENAI_API_KEY=${apiKey}\n`;
+        const filePath = this.app.vault.adapter.basePath + '/python/.env';
+        await this.app.vault.adapter.write(filePath, fileContent);
+    }
 }
 
 class SampleModal extends Modal {
@@ -124,13 +131,13 @@ class SampleSettingTab extends PluginSettingTab {
 		containerEl.empty();
 
 		new Setting(containerEl)
-			.setName('Setting #1')
-			.setDesc('It\'s a secret')
+			.setName('OpenAI API Key')
+			.setDesc('This is necessary for functioning of the plugin')
 			.addText(text => text
-				.setPlaceholder('Enter your secret')
-				.setValue(this.plugin.settings.mySetting)
+				.setPlaceholder('OpenAI API Key')
+				.setValue(this.plugin.settings.openaiApiKey)
 				.onChange(async (value) => {
-					this.plugin.settings.mySetting = value;
+					this.plugin.settings.openaiApiKey = value;
 					await this.plugin.saveSettings();
 				}));
 	}

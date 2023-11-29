@@ -6,7 +6,6 @@ Contains functions & classes for creating graphs and pulling information from th
 
 from typing import List, Optional
 
-from dotenv import load_dotenv
 from langchain.chains.openai_functions import create_structured_output_chain
 from langchain.chat_models import ChatOpenAI
 from langchain.graphs import Neo4jGraph
@@ -22,10 +21,10 @@ from tqdm import tqdm
 
 import embedding_handling
 import file_handling
+from load_environment import load_environment
 
 
-load_dotenv()
-# OPENAI_API_KEY in .env file
+load_environment()
 
 
 GPT3_TURBO = ChatOpenAI(model="gpt-3.5-turbo-1106", temperature=0)

@@ -1,3 +1,9 @@
+"""
+ask_questions.py
+
+Functions for answering questions based on the embeddings and knowledge graph created.
+"""
+
 from langchain.chat_models import ChatOpenAI
 from langchain.schema import HumanMessage, SystemMessage
 from tqdm import tqdm
