@@ -30,7 +30,7 @@ def get_answer_from_sources(
 
             {formatted_chunks}
 
-            Use all of the above resources to answer the user's question in as much detail as the context can provide. If the provided facts or document chunks do not provide enough information to answer the question, then say "Sorry, but I could not find enough information to answer the question."
+            Use all of the above resources to answer the user's question in as much detail as the context can provide by itself. If the provided facts or document chunks do not provide enough information to answer the question, then say "Sorry, but I could not find enough information to answer the question."
             """
         ),
         HumanMessage(content=question),

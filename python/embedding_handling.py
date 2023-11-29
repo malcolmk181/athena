@@ -18,7 +18,7 @@ from tqdm import tqdm
 import file_handling
 
 
-CHUNK_SIZE = 512
+CHUNK_SIZE = 1024
 CHUNK_OVERLAP = 24
 
 

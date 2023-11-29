@@ -303,9 +303,9 @@ def get_all_node_names() -> list[str]:
 
     names: list[dict] = get_graph_connector().query(
         """
-                MATCH (n)
-                WHERE n.name IS NOT NULL
-                RETURN n.name"""
+        MATCH (n)
+        WHERE n.name IS NOT NULL
+        RETURN n.name"""
     )
 
     return [list(d.values())[0] for d in names]
@@ -359,7 +359,7 @@ def get_chunk_ids_by_node_names(node_names: list[str]) -> list[str]:
     ids: list[dict] = get_graph_connector().query(
         f"""
                             MATCH (n)
-                            WHERE n.name IN [{",".join([f"'{name}'" for name in node_names])}]
+                            WHERE n.name IN [{",".join([f'"{name}"' for name in node_names])}]
                             OPTIONAL MATCH (n)-[r]-(related:ObsidianNoteChunk)"""
         + """ RETURN collect({id: related.id}) as relatedNodes
                         """
@@ -385,7 +385,7 @@ def get_non_housekeeping_relationships_from_node_name(
     # Block of Cypher for modifying the results to blank out non-allowed nodes
     if allowed_names:
         allowed_node_syntax += "WHEN NOT related.name IN ["
-        allowed_node_syntax += ",".join([f"'{name}'" for name in allowed_names])
+        allowed_node_syntax += ",".join([f'"{name}"' for name in allowed_names])
         allowed_node_syntax += "]\nTHEN {label: 'Unrelated'}"
 
     query_results: list[dict] = get_graph_connector().query(
@@ -430,7 +430,7 @@ def get_interrelationships_between_nodes(
 ) -> list[tuple[dict, str, dict]]:
     """Given a list of node names, will return the relationships between them."""
 
-    node_str = ",".join([f"'{node}'" for node in node_names])
+    node_str = ",".join([f'"{node}"' for node in node_names])
 
     query_results: list[dict] = get_graph_connector().query(
         f"""
