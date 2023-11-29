@@ -4,6 +4,8 @@ Builds the knowledge graph and embeddings for the notes in the Obsidian Vault.
 This WILL delete any pre-existing graph and embeddings.
 """
 
+import os
+
 from tqdm import tqdm
 
 import embedding_handling
@@ -11,8 +13,15 @@ import file_handling
 import graph_handling
 
 
-def main() -> None:
+def build_kg_and_embeddings() -> None:
     """Creates a new file store, embedding vector store, and graph."""
+
+    current_dir = os.getcwd()
+    file_path = os.path.join(current_dir, "done_generating")
+
+    if os.path.exists(file_path):
+        # delete the file
+        os.remove(file_path)
 
     graph = graph_handling.get_graph_connector()
 
@@ -37,6 +46,10 @@ def main() -> None:
         )
         graph.add_graph_documents([graph_doc])
 
+    # Recreate the done file
+    with open(file_path, "w", encoding="utf-8") as done_file:
+        done_file.write("done")
+
 
 if __name__ == "__main__":
-    main()
+    build_kg_and_embeddings()
