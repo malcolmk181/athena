@@ -32,7 +32,7 @@ def get_answer_from_sources(
 
             {formatted_summaries}
 
-            Here is a collection of relevants chunks of notes, pulled from a collection of the user's documents:
+            Here is a collection of relevant chunks of notes, pulled from a collection of the user's documents:
 
             {formatted_chunks}
 
